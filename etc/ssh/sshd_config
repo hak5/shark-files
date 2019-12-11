@@ -1,0 +1,4 @@
+PermitRootLogin yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+Subsystem sftp internal-sftp

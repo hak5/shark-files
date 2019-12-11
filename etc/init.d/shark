@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+start() {
+	logger -t Shark "[*] Starting Hak5 Shark Jack"
+	/usr/bin/shark_framework
+}
+
+stop() {
+	logger -t Shark "[*] Stopping Hak5 Shark Jack"
+	sync
+	/usr/bin/LED OFF
+	halt
+}

@@ -1,0 +1,243 @@
+#!/bin/bash
+
+RED_LED="/sys/class/leds/shark:red:system/brightness"
+GREEN_LED="/sys/class/leds/shark:green:system/brightness"
+BLUE_LED="/sys/class/leds/shark:blue:system/brightness"
+
+colors=(0 0 0)
+pattern=(1 0 0 0 0 0)
+
+function convert() {
+    echo $([[ $1 -lt 20 ]] && echo 0.02 || echo $1 1000 | awk '{ print $1/$2 }')
+}
+
+function parse_color() {
+    case $1 in
+        "R")
+            colors=(1 0 0)
+            ;;
+        "G")
+            colors=(0 1 0)
+            ;;
+        "B")
+            colors=(0 0 1)
+            ;;
+        "Y")
+            colors=(1 1 0)
+            ;;
+        "C")
+            colors=(0 1 1)
+            ;;
+        "M")
+            colors=(1 0 1)
+            ;;
+        "W")
+            colors=(1 1 1)
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+function parse_pattern() {
+    local INVERTED="0"
+    [[ "$(echo $1 | head -c1)" == "I" ]] && {
+        INVERTED="1"
+    }
+    case $1 in
+        "SLOW")
+            pattern=(0 0 1 $(convert 1000) $(convert 1000) 1)
+            ;;
+        "FAST")
+            pattern=(0 0 1 $(convert 100) $(convert 100) 1)
+            ;;
+        "VERYFAST")
+            pattern=(0 0 1 $(convert 10) $(convert 10) 1)
+            ;;
+        "ISINGLE" | "SINGLE")
+            pattern=(0 $INVERTED 1 $(convert 100) $(convert 1000) 1)
+            ;;
+        "IDOUBLE" | "DOUBLE")
+            pattern=(0 $INVERTED 2 $(convert 100) $(convert 1000) 1)
+            ;;
+        "ITRIPLE" | "TRIPLE")
+            pattern=(0 $INVERTED 3 $(convert 100) $(convert 1000) 1)
+            ;;
+        "IQUAD" | "QUAD")
+            pattern=(0 $INVERTED 4 $(convert 100) $(convert 1000) 1)
+            ;;
+        "IQUIN" | "QUIN")
+            pattern=(0 $INVERTED 5 $(convert 100) $(convert 1000) 1)
+            ;;
+        "SUCCESS")
+            pattern=(0 0 1 $(convert 10) $(convert 10) 0)
+            ;;
+        *)
+            [[ $1 =~ ^-?[0-9]+$ ]] && pattern=(0 0 1 $(convert $1) $(convert $1) 1) || pattern=(1 0 0 0 0 0)
+            ;;
+    esac
+    return 0
+}
+
+function parse_state() {
+
+    local STATENUM="1"
+    [[ $1 =~ ^[A-Z]+[1-5]$ ]] && {
+        STATENUM="${1: -1}"
+    }
+
+    case $1 in
+        "SETUP")
+            parse_color "M"
+            parse_pattern "SOLID"
+            ;;
+        "FAIL" | FAIL[1-3])
+            parse_color "R"
+            parse_pattern "SLOW"
+            pattern[3]=$(convert $(echo -n 1000 | head -c $((5-$STATENUM))))
+            ;;
+        "ATTACK" | STAGE[1-5])
+            parse_color "Y"
+            parse_pattern "SINGLE"
+            pattern[2]=$STATENUM
+            ;;
+        "SPECIAL" | SPECIAL[1-5])
+            parse_color "C"
+            parse_pattern "ISINGLE"
+            pattern[2]=$STATENUM
+            ;;
+        "CLEANUP")
+            parse_color "W"
+            parse_pattern "FAST"
+            ;;
+        "FINISH")
+            parse_color "G"
+            parse_pattern "SUCCESS"
+            ;;
+        "OFF")
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+function clear_led() {
+    echo 0 > $RED_LED 2>&1
+    echo 0 > $GREEN_LED 2>&1
+    echo 0 > $BLUE_LED 2>&1
+}
+
+function light_led() {
+    echo ${colors[0]} > $RED_LED 2>&1
+    echo ${colors[1]} > $GREEN_LED 2>&1
+    echo ${colors[2]} > $BLUE_LED 2>&1
+}
+
+function blink_loop() {
+    local sc=1
+    until [[ "$sc" == "10" ]]; do
+        for i in $(seq 1 ${pattern[2]}); do
+            [[ "${pattern[1]}" == "0" ]] && light_led || clear_led
+            sleep ${pattern[3]}
+            [[ "${pattern[1]}" == "0" ]] && clear_led || light_led
+            sleep ${pattern[3]}
+        done
+        sleep ${pattern[4]}
+        [[ "${pattern[5]}" == "0" ]] && sc=$((sc+1))
+    done
+    [[ "${pattern[5]}" == "0" ]] && light_led
+}
+
+function run_led() {
+    parse_state $1 || {
+        parse_color $1 || return 1
+        [[ "$#" == "2" ]] && parse_pattern $2
+    }
+
+    [[ "${pattern[0]}" == "1" ]] && {
+        light_led &
+        return 0
+    } || {
+        blink_loop &
+        return 0
+    }
+    return 1
+}
+
+function show_usage() {
+    cat << EOF
+Usage: LED [COLOR] [PATTERN] or LED [STATE]
+
+COLORS:
+  R           Red
+  G           Green
+  B           Blue
+  Y, R G      Yellow (Commonly known as Amber)
+  C, G B      Cyan (Commonly known as Light Blue)
+  M, R B      Magenta (Commonly known as Violet or Purple)
+  W, R G B    White (Combination of R + G + B)
+
+PATTERNS:
+  SOLID       *Default. No blink. Used if pattern argument is omitted
+  SLOW        Symmetric 1000ms ON, 1000ms OFF, repeating
+  FAST        Symmetric 100ms ON, 100ms OFF, repeating
+  VERYFAST    Symmetric 10ms ON, 10ms OFF, repeating
+
+  SINGLE      1 100ms blink(s) ON followed by 1 second OFF, repeating
+  DOUBLE      2 100ms blink(s) ON followed by 1 second OFF, repeating
+  TRIPLE      3 100ms blink(s) ON followed by 1 second OFF, repeating
+  QUAD        4 100ms blink(s) ON followed by 1 second OFF, repeating
+  QUIN        5 100ms blink(s) ON followed by 1 second OFF, repeating
+
+  ISINGLE     1 100ms blink(s) OFF followed by 1 second ON, repeating
+  IDOUBLE     2 100ms blink(s) OFF followed by 1 second ON, repeating
+  ITRIPLE     3 100ms blink(s) OFF followed by 1 second ON, repeating
+  IQUAD       4 100ms blink(s) OFF followed by 1 second ON, repeating
+  IQUIN       5 100ms blink(s) OFF followed by 1 second ON, repeating
+
+  SUCCESS     1000ms VERYFAST blink followed by SOLID
+  #           Custom value in ms for continuous symmetric blinking
+
+STATES:
+In addition to the combinations of COLORS and PATTERNS listed above,
+these standardized LED STATES may be used to indicate payload status:
+
+  SETUP       M SOLID     Magenta solid
+
+  FAIL        R SLOW      Red slow blink
+    FAIL1     R SLOW      Red slow blink
+    FAIL2     R FAST      Red fast blink
+    FAIL3     R VERYFAST  Red very fast blink
+
+  ATTACK      Y SINGLE    Yellow single blink
+    STAGE1    Y SINGLE    Yellow single blink
+    STAGE2    Y DOUBLE    Yellow double blink
+    STAGE3    Y TRIPLE    Yellow triple blink
+    STAGE4    Y QUAD      Yellow quadruple blink
+    STAGE5    Y QUIN      Yellow quintuple blink
+
+  SPECIAL     C ISINGLE   Cyan inverted single blink
+    SPECIAL1  C ISINGLE   Cyan inverted single blink
+    SPECIAL2  C IDOUBLE   Cyan inverted double blink
+    SPECIAL3  C ITRIPLE   Cyan inverted triple blink
+    SPECIAL4  C IQUAD     Cyan inverted quadruple blink
+    SPECIAL5  C IQUIN     Cyan inverted quintuple blink
+
+  CLEANUP      W FAST      White fast blink
+  FINISH       G SUCCESS   Green very fast blink followed by SOLID
+
+  OFF                      Turns the LED off
+
+
+Examples:
+  LED Y SINGLE
+  LED M 500
+  LED SETUP
+EOF
+}
+
+ps | grep LED | grep -v grep | awk '{print $1}' | grep -v $$ | xargs kill -9 &> /dev/null
+run_led $@ || show_usage

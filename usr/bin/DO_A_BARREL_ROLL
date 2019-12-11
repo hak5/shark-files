@@ -1,0 +1,2 @@
+#!/bin/bash
+while true;do LED R;LED Y;LED G;LED C;LED B;LED M;done > /dev/null 2>&1 &

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+function show_usage() {
+    echo "Usage: $0 [DHCP_CLIENT|DHCP_SERVER]"
+    echo ""
+}
+
+case $1 in
+    "DHCP_CLIENT")
+        uci set network.lan.proto='dhcp'
+        ;;
+    "DHCP_SERVER")
+        uci set network.lan.proto='none'
+        /etc/init.d/odhcpd start
+        ;;
+    *)
+        show_usage
+        exit 0
+        ;;
+esac
+
+uci commit network
+/etc/init.d/network restart

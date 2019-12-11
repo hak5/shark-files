@@ -1,0 +1,248 @@
+#!/bin/bash
+
+LOG="logger -t Shark [*]"
+LOG_ERR="logger -t Shark -p 3 [!]"
+
+MODE="OFF"
+SWITCH_POSITION=$(/usr/bin/SWITCH)
+
+function upgrade_leds() {
+    /usr/bin/LED OFF
+    while true
+    do
+        echo 1 > /sys/class/leds/shark:red:system/brightness
+        sleep 0.2
+        echo 0 > /sys/class/leds/shark:red:system/brightness
+        echo 1 > /sys/class/leds/shark:blue:system/brightness
+        sleep 0.2
+        echo 0 > /sys/class/leds/shark:blue:system/brightness
+    done
+}
+
+# $1: Upgrade file
+# $2: MD5 file
+# $3: Upgrade file size in bytes
+function extract_md5() {
+    dd if=$1 of=$2 skip=$3 bs=1 count=33
+}
+
+# $1: Upgrade file
+# $2: MD5 file
+function verify_md5() {
+    expected=$(cat $2)
+    checksum=$(md5sum $1 | awk '{print $1}')
+    [[ $expected = $checksum ]] && {
+        return 0
+    }
+    return 1
+}
+
+# $1: Upgrade file
+# $2: Upgrade file size in bytes
+function truncate_upgrade() {
+    dd if=/dev/null of=$1 bs=1 seek=$2
+}
+
+function execute_upgrade() {
+    # Check for upgrade file in default location
+    $LOG "Checking for firmware upgrade"
+    upgrade_file=$(ls /root/upgrade-*.bin 2>/dev/null | tail -n1)
+
+    [[ -f $upgrade_file ]] && {
+        # Upgrade file found
+        $LOG "Firmware upgrade found"
+
+        $LOG "Verifying firmware upgrade"
+        upgrade_file_size=$(( $(ls -l $upgrade_file | awk '{print $5}') - 33 ))
+
+        # Extract md5sum from upgrade file
+        extract_md5 $upgrade_file /tmp/upgrade.md5 $upgrade_file_size
+
+        cp $upgrade_file /tmp/upgrade.bin
+        truncate_upgrade /tmp/upgrade.bin $upgrade_file_size
+
+        # Verify upgrade file
+        verify_md5 /tmp/upgrade.bin /tmp/upgrade.md5 || {
+            # Upgrade file not verified; exit
+            $LOG "Firmware upgrade not verified. File may be corrupt"
+            LED FAIL &
+            return 1
+        }
+        $LOG "Firmware upgrade verified"
+        LED OFF && LED SUCCESS
+
+        # Check battery state first
+        $LOG "Checking device power state"
+        battery_state=$(/usr/bin/BATTERY)
+        [[ $battery_state = "discharging" ]] && {
+            # Device is not plugged in
+            $LOG "Device is not powered. Do not attempt firmware upgrade"
+            return 1
+        }
+        $LOG "Device is powered"
+
+        # Remove upgrade file
+        rm -rf $upgrade_file
+        sync
+
+        # Upgrade file verified; run upgrade
+        $LOG "Executing UPGRADE"
+        sleep 2 && upgrade_leds &
+        echo "sysupgrade -n /tmp/upgrade.bin" | at now
+
+        exit
+    } || {
+        # Upgrade file not found; enter arming mode
+        $LOG "Firmware upgrade not found"
+        return 1
+    }
+}
+
+function execute_payload() {
+    $LOG "Executing PAYLOAD"
+
+    if [ ! -d /root/loot ]; then
+        mkdir -p /root/loot;
+    fi
+
+    payload_path="/root/payload"
+    payload=$(ls $payload_path/payload* 2>/dev/null | tail -n1)
+
+    case $(basename $payload) in
+        "payload.py")
+            echo "python $payload &> /dev/null" | at now
+            ;;
+        "payload.php")
+            echo "php-cli $payload &> /dev/null" | at now
+            ;;
+        "payload" | "payload.sh" | "payload.txt")
+            sed -i 's/\r//g' $payload
+            echo "bash -C '$payload'" | at now
+            ;;
+        *)
+            /usr/bin/LED FAIL
+            ;;
+    esac
+}
+
+function configure_network() {
+    cp /usr/lib/config/${SWITCH_POSITION}/network /etc/config/network
+    /etc/init.d/network restart
+}
+
+function start_http() {
+    /etc/init.d/uhttpd start
+}
+
+function stop_http() {
+    /etc/init.d/uhttpd stop
+}
+
+function start_ssh() {
+    /etc/init.d/sshd start
+}
+
+function stop_ssh() {
+    /etc/init.d/sshd stop
+}
+
+function enter_attack_mode() {
+    $LOG "Entering ATTACK mode"
+    MODE="ATTACK"
+    /usr/bin/LED OFF
+
+    configure_network
+    stop_http
+    stop_ssh
+
+    execute_payload
+
+    enter_idle_mode
+}
+
+function enter_arming_mode() {
+    $LOG "Entering ARMING mode"
+    MODE="ARMING"
+    /usr/bin/LED OFF
+
+    configure_network
+    start_http
+    start_ssh
+
+    enter_idle_mode
+}
+
+function enter_off_mode() {
+    $LOG "Entering OFF mode"
+    MODE="OFF"
+    /usr/bin/LED OFF
+
+    stop_http
+    stop_ssh
+
+    enter_idle_mode
+}
+
+function enter_idle_mode() {
+    $LOG "Entering IDLE mode"
+    while true
+    do
+        if [[ $MODE = "ARMING" ]] || [[ $MODE = "OFF" ]]; then
+            BATTERY_STATE=$(/usr/bin/BATTERY)
+            case $BATTERY_STATE in
+                "charging")
+                    /usr/bin/LED B SLOW
+                    ;;
+                "full")
+                    /usr/bin/LED B
+                    ;;
+                *)
+                    /usr/bin/LED Y SLOW
+                    if [[ $MODE = "OFF" ]]; then
+                        sleep 2 && halt
+                    fi
+                    ;;
+            esac
+        fi
+
+        SWITCH_POSITION=$(/usr/bin/SWITCH)
+        case $SWITCH_POSITION in
+            "switch3")
+                if [[ $MODE != "ATTACK" ]]; then
+                    enter_attack_mode
+                fi
+                ;;
+            "switch2")
+                if [[ $MODE != "ARMING" ]]; then
+                    execute_upgrade || enter_arming_mode
+                fi
+                ;;
+            *)
+                if [[ $MODE != "OFF" ]]; then
+                    enter_off_mode
+                fi
+                ;;
+        esac
+        sleep 1
+    done
+}
+
+
+function run() {
+    case $SWITCH_POSITION in
+        "switch3")
+            enter_attack_mode
+            ;;
+        "switch2")
+            execute_upgrade || enter_arming_mode
+            ;;
+        *)
+            enter_off_mode
+            ;;
+    esac
+}
+
+
+# Start framework after a short wait
+sleep 2
+run &> /dev/null &

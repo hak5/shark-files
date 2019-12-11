@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# List of directories to clean
+DIRS=(
+    ~/.ssh
+    /root/loot
+)
+
+# Clean up each directory
+for d in ${DIRS[@]}; do
+    [[ -d $d ]] && rm -rf $d
+done

@@ -1,0 +1,4 @@
+[submodule "www"]
+	path = www
+	url = git@github.com:hak5/unified-ui.git
+	branch = master
