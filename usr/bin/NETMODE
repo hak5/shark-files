@@ -5,14 +5,35 @@ function show_usage() {
     echo ""
 }
 
+function configure_client() {
+    /etc/init.d/odhcpd stop
+    uci set network.lan.proto='dhcp'
+}
+
+function configure_server() {
+    uci set network.lan.proto='none'
+    /etc/init.d/odhcpd start
+}
+
 case $1 in
     "DHCP_CLIENT")
-        uci set network.lan.proto='dhcp'
-        /etc/init.d/odhcpd stop
+        configure_client
         ;;
     "DHCP_SERVER")
-        uci set network.lan.proto='none'
-        /etc/init.d/odhcpd start
+        configure_server
+        ;;
+    "AUTO")
+        #make sure nothing interferes
+        /etc/init.d/odhcpd stop
+        /etc/init.d/network stop
+        #this will exit 0 if a dhcp related packet is seen, and 124 if not
+        #todo: this only looks for a dhcp request/discover and doesn't check that there was no reply...
+        if timeout 10 tcpdump -Z nobody -i eth0 -c 1 -q udp src port 68 > /dev/null 2>&1; then
+            #we saw someone looking for a dhcp server
+            configure_server
+        else
+            configure_client
+        fi
         ;;
     *)
         show_usage
