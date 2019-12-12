@@ -99,11 +99,11 @@ function execute_upgrade() {
 }
 
 function wait_for_link() {
-  LED LINKSETUP
-  while mii-tool eth0 | grep -q 'eth0: no link'; do
-    sleep 1
-  done
-  LED SETUP
+    LED LINKSETUP
+    while mii-tool eth0 | grep -q 'eth0: no link'; do
+        sleep 1
+    done
+    LED SETUP
 }
 
 function execute_payload() {
