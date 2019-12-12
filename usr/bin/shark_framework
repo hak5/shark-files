@@ -98,6 +98,14 @@ function execute_upgrade() {
     }
 }
 
+function wait_for_link() {
+    LED LINKSETUP
+    while mii-tool eth0 | grep -q 'eth0: no link'; do
+        sleep 1
+    done
+    LED SETUP
+}
+
 function execute_payload() {
     $LOG "Executing PAYLOAD"
 
@@ -155,6 +163,7 @@ function enter_attack_mode() {
     stop_http
     stop_ssh
 
+    wait_for_link
     execute_payload
 
     enter_idle_mode

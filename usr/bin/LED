@@ -88,6 +88,10 @@ function parse_state() {
     }
 
     case $1 in
+        "LINKSETUP")
+            parse_color "M"
+            parse_pattern "SLOW"
+            ;;
         "SETUP")
             parse_color "M"
             parse_pattern "SOLID"
