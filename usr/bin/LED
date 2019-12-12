@@ -239,5 +239,5 @@ Examples:
 EOF
 }
 
-ps | grep LED | grep -v grep | awk '{print $1}' | grep -v $$ | xargs kill -9 &> /dev/null
+pkill -9 LED &> /dev/null
 run_led $@ || show_usage
