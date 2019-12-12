@@ -8,6 +8,7 @@ function show_usage() {
 case $1 in
     "DHCP_CLIENT")
         uci set network.lan.proto='dhcp'
+        /etc/init.d/odhcpd stop
         ;;
     "DHCP_SERVER")
         uci set network.lan.proto='none'
