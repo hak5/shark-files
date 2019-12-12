@@ -15,6 +15,17 @@ function configure_server() {
     /etc/init.d/odhcpd start
 }
 
+function blink() {
+  count 3
+  while [ "${count}" -gt 0 ]; do
+    LED $1
+    sleep 0.25
+    LED $2
+    sleep 0.25
+    count=$((count-1))
+  done
+}
+
 case $1 in
     "DHCP_CLIENT")
         configure_client
@@ -25,14 +36,17 @@ case $1 in
     "AUTO")
         #make sure nothing interferes
         /etc/init.d/odhcpd stop
-        /etc/init.d/network stop
-        #this will exit 0 if a dhcp related packet is seen, and 124 if not
-        #todo: this only looks for a dhcp request/discover and doesn't check that there was no reply...
-        if timeout 10 tcpdump -Z nobody -i eth0 -c 1 -q udp src port 68 > /dev/null 2>&1; then
-            #we saw someone looking for a dhcp server
+        pkill -9 odhcpcd
+        #this will exit 0 if a dhcp discovery/request packet is seen, and 124 if not
+        sniffed="$(timeout 15 tcpdump -Z nobody -i eth0 -c 3 udp src port 68 and udp dst port 67 -v 2>&1)"
+        if echo "${sniffed}" | grep -q 'DHCP-Message Option 53, length 1: Discover' && \
+          ! echo "${sniffed}" | grep -q 'DHCP-Message Option 53, length 1: Request'; then
+            #we saw a dhcp discover but no dhcp request, so someone wants a dhcp server and didn't find one
             configure_server
+            echo 'blink SETUP Y' | at now
         else
             configure_client
+            echo 'blink SETUP W' | at now
         fi
         ;;
     *)
