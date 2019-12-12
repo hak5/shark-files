@@ -1,0 +1,11 @@
+## Extensions folder
+#
+# This files in this folder are sourced just before payload execution.
+# Users can add helper functions in here and use those functions in their payloads if desired.
+# Example which allows you to call "example" from payload script:
+#
+# function example() {
+#     printf 'I am an example!\n'
+# }
+#
+# export -f example
