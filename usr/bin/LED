@@ -88,10 +88,6 @@ function parse_state() {
     }
 
     case $1 in
-        "LINKSETUP")
-            parse_color "M"
-            parse_pattern "SLOW"
-            ;;
         "SETUP")
             parse_color "M"
             parse_pattern "SOLID"
@@ -243,5 +239,5 @@ Examples:
 EOF
 }
 
-pkill -9 LED &> /dev/null
+ps | grep LED | grep -v grep | awk '{print $1}' | grep -v $$ | xargs kill -9 &> /dev/null
 run_led $@ || show_usage

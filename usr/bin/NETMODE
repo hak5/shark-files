@@ -1,17 +1,34 @@
 #!/bin/bash
 
 function show_usage() {
-    echo "Usage: $0 [DHCP_CLIENT|DHCP_SERVER]"
+    echo "Usage: $0 [DEFAULT|DHCP_CLIENT|DHCP_SERVER|TRANSPARENT|STATIC <IP address>]"
     echo ""
 }
 
 case $1 in
+    "DEFAULT")
+        cp /usr/lib/config/switch3/network /etc/config/network
+        /etc/init.d/odhcpd stop
+        ;;
     "DHCP_CLIENT")
         uci set network.lan.proto='dhcp'
         ;;
     "DHCP_SERVER")
         uci set network.lan.proto='none'
         /etc/init.d/odhcpd start
+        ;;
+    "TRANSPARENT")
+        uci set network.lan.proto='none'
+        /etc/init.d/odhcpd stop
+        ;;
+    "STATIC")
+        cp /usr/lib/config/switch2/network /etc/config/network
+        valid_ip="^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$"
+        if [[ $2 =~ $valid_ip ]]; then
+            uci set network.lan.ipaddr=$2
+        else
+            logger -t Shark [*] "IP address not valid"
+        fi
         ;;
     *)
         show_usage
