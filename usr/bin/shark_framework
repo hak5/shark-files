@@ -197,16 +197,19 @@ function enter_idle_mode() {
     while true
     do
         if [[ $MODE = "ARMING" ]] || [[ $MODE = "OFF" ]]; then
+            #ARMING mode is basically always idle which means this overrides user LED
+            #status once per second.  Don't override user status with idle status.
+            #pgrep LED > /dev/null || /usr/bin/LED whatever
             BATTERY_STATE=$(/usr/bin/BATTERY)
             case $BATTERY_STATE in
                 "charging")
-                    /usr/bin/LED B SLOW
+                    pgrep LED > /dev/null || /usr/bin/LED B SLOW
                     ;;
                 "full")
-                    /usr/bin/LED B
+                    pgrep LED > /dev/null || /usr/bin/LED B
                     ;;
                 *)
-                    /usr/bin/LED Y SLOW
+                    pgrep LED > /dev/null || /usr/bin/LED Y SLOW
                     if [[ $MODE = "OFF" ]]; then
                         sleep 2 && halt
                     fi
