@@ -16,10 +16,10 @@ function check_gpio() {
 gpio0=$(check_gpio 0)
 gpio2=$(check_gpio 2)
 
-if [ ${gpio0} -eq "0" ] && [ ${gpio2} -eq "0" ]; then
+if [ "${gpio0}" -eq "0" ] && [ "${gpio2}" -eq "0" ]; then
     echo "switch1"
-elif [ ${gpio0} -eq "0" ]; then
+elif [ "${gpio0}" -eq "0" ]; then
     echo "switch3"
-elif [ ${gpio2} -eq "0" ]; then
+elif [ "${gpio2}" -eq "0" ]; then
     echo "switch2"
 fi
