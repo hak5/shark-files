@@ -127,11 +127,20 @@ function stop_ssh() {
     /etc/init.d/sshd stop
 }
 
+function start_dnsmasq() {
+    /etc/init.d/dnsmasq start
+}
+
+function stop_dnsmasq() {
+    /etc/init.d/dnsmasq stop
+}
+
 function enter_attack_mode() {
     $LOG "Entering ATTACK mode"
     MODE="ATTACK"
     /usr/bin/LED OFF
 
+    stop_dnsmasq
     configure_network
     stop_http
     stop_ssh
@@ -148,6 +157,7 @@ function enter_arming_mode() {
     /usr/bin/LED OFF
 
     configure_network
+    start_dnsmasq
     start_http
     start_ssh
 
@@ -159,6 +169,7 @@ function enter_off_mode() {
     MODE="OFF"
     /usr/bin/LED OFF
 
+    stop_dnsmasq
     stop_http
     stop_ssh
 
