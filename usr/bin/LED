@@ -243,5 +243,9 @@ Examples:
 EOF
 }
 
-pkill -9 LED &> /dev/null
+#so pgrep/pkill exclude their own pid, but not their parent
+#the parent is this script, which we don't want to kill
+if [ -n "$(pgrep LED | grep -v $$)" ]; then
+  kill $(pgrep LED | grep -v $$) &> /dev/null
+fi
 run_led $@ || show_usage
