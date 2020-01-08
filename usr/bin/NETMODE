@@ -14,17 +14,18 @@ function shut_it_all_down() {
     pkill -9 odhcpcd #just in case
 }
 
-function configure_client() {
+function configure_dhcp_client() {
     shut_it_all_down
     uci set network.lan.proto='dhcp'
 }
 
-function configure_server() {
+function configure_dhcp_server() {
     shut_it_all_down
     uci set network.lan.proto='static'
     uci set network.lan.ipaddr='172.16.24.1'
     uci set network.lan.netmask='255.255.255.0'
     uci set network.lan.ip6assign='60'
+    uci add_list dhcp.lan.dhcp_option="3,172.16.24.1"
     /etc/init.d/dnsmasq start
 }
 
@@ -41,10 +42,10 @@ function blink() {
 
 case $1 in
     "DHCP_CLIENT")
-        configure_client
+        configure_dhcp_client
         ;;
     "DHCP_SERVER")
-        configure_server
+        configure_dhcp_server
         ;;
     "AUTO")
         #make sure nothing interferes
@@ -54,10 +55,10 @@ case $1 in
         if echo "${sniffed}" | grep -q 'DHCP-Message Option 53, length 1: Discover' && \
           ! echo "${sniffed}" | grep -q 'DHCP-Message Option 53, length 1: Request'; then
             #we saw a dhcp discover but no dhcp request, so someone wants a dhcp server and didn't find one
-            configure_server
+            configure_dhcp_server
             echo 'blink SETUP Y' | at now
         else
-            configure_client
+            configure_dhcp_client
             echo 'blink SETUP W' | at now
         fi
         ;;
