@@ -144,6 +144,7 @@ function enter_attack_mode() {
     configure_network
     stop_http
     stop_ssh
+    macchanger -r eth0
 
     wait_for_link
     echo "execute_payload" | at now
