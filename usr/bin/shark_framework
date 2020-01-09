@@ -128,6 +128,11 @@ function stop_ssh() {
 }
 
 function start_dnsmasq() {
+    #remove old dhcp options before setting new
+    uci -q delete dhcp.lan.dhcp_option
+    #disables gateway, netmode re-enables it
+    uci add_list dhcp.lan.dhcp_option="3"
+    uci commit
     /etc/init.d/dnsmasq start
 }
 
