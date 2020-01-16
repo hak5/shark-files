@@ -141,6 +141,8 @@ enter_attack_mode() {
     ip link set eth0 down
     macchanger -r eth0
     configure_network
+    #nothing starts this, but ensure it only runs with
+    pkill -9 udhcpc
     stop_http
     stop_ssh
 
