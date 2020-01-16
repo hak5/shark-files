@@ -53,7 +53,7 @@ execute_upgrade() {
         $LOG "Firmware upgrade found"
 
         $LOG "Verifying firmware upgrade"
-        upgrade_file_size=$(( $(ls -l "${upgrade_file}" | awk '{print $5}') - 33 ))
+        upgrade_file_size=$(( $(wc -c "${upgrade_file}") - 33 ))
 
         # Extract md5sum from upgrade file
         extract_md5 "${upgrade_file}" /tmp/upgrade.md5 "${upgrade_file_size}"
@@ -62,23 +62,23 @@ execute_upgrade() {
         truncate_upgrade /tmp/upgrade.bin "${upgrade_file_size}"
 
         # Verify upgrade file
-        verify_md5 /tmp/upgrade.bin /tmp/upgrade.md5 || {
+        if ! verify_md5 /tmp/upgrade.bin /tmp/upgrade.md5; then
             # Upgrade file not verified; exit
             $LOG "Firmware upgrade not verified. File may be corrupt"
             LED FAIL &
             return 1
-        }
+        fi
         $LOG "Firmware upgrade verified"
         LED OFF && LED SUCCESS
 
         # Check battery state first
         $LOG "Checking device power state"
         battery_state=$(/usr/bin/BATTERY)
-        [ "${battery_state}" = "discharging" ] && {
+        if [ "${battery_state}" = "discharging" ]; then
             # Device is not plugged in
             $LOG "Device is not powered. Do not attempt firmware upgrade"
             return 1
-        }
+        fi
         $LOG "Device is powered"
 
         # Remove upgrade file
