@@ -8,7 +8,8 @@ colors=(0 0 0)
 pattern=(1 0 0 0 0 0)
 
 function convert() {
-    echo $([[ $1 -lt 20 ]] && echo 0.02 || echo $1 1000 | awk '{ print $1/$2 }')
+    #Note that A && B || C is not if-then-else. C may run when A is true. [SC2015]
+    echo $([[ "${1}" -lt 20 ]] && echo 0.02 || echo "${1}" 1000 | awk '{ print $1/$2 }')
 }
 
 function parse_color() {
@@ -42,7 +43,7 @@ function parse_color() {
 
 function parse_pattern() {
     local INVERTED="0"
-    [[ "$(echo $1 | head -c1)" == "I" ]] && {
+    [[ "$(echo ${1} | head -c1)" == "I" ]] && {
         INVERTED="1"
     }
     case $1 in
@@ -99,7 +100,7 @@ function parse_state() {
         "FAIL" | FAIL[1-3])
             parse_color "R"
             parse_pattern "SLOW"
-            pattern[3]=$(convert $(echo -n 1000 | head -c $((5-$STATENUM))))
+            pattern[3]=$(convert "$(echo -n 1000 | head -c $((5-STATENUM)))")
             ;;
         "ATTACK" | STAGE[1-5])
             parse_color "Y"
@@ -135,32 +136,35 @@ function clear_led() {
 }
 
 function light_led() {
-    echo ${colors[0]} > $RED_LED 2>&1
-    echo ${colors[1]} > $GREEN_LED 2>&1
-    echo ${colors[2]} > $BLUE_LED 2>&1
+    echo "${colors[0]}" > $RED_LED 2>&1
+    echo "${colors[1]}" > $GREEN_LED 2>&1
+    echo "${colors[2]}" > $BLUE_LED 2>&1
 }
 
 function blink_loop() {
     local sc=1
     until [[ "$sc" == "10" ]]; do
         for i in $(seq 1 ${pattern[2]}); do
+            #Note that A && B || C is not if-then-else. C may run when A is true. [SC2015]
             [[ "${pattern[1]}" == "0" ]] && light_led || clear_led
-            sleep ${pattern[3]}
+            sleep "${pattern[3]}"
+            #Note that A && B || C is not if-then-else. C may run when A is true. [SC2015]
             [[ "${pattern[1]}" == "0" ]] && clear_led || light_led
-            sleep ${pattern[3]}
+            sleep "${pattern[3]}"
         done
-        sleep ${pattern[4]}
+        sleep "${pattern[4]}"
         [[ "${pattern[5]}" == "0" ]] && sc=$((sc+1))
     done
     [[ "${pattern[5]}" == "0" ]] && light_led
 }
 
 function run_led() {
-    parse_state $1 || {
-        parse_color $1 || return 1
-        [[ "$#" == "2" ]] && parse_pattern $2
+    parse_state "${1}" || {
+        parse_color "${1}" || return 1
+        [[ "$#" == "2" ]] && parse_pattern "${2}"
     }
 
+    #Note that A && B || C is not if-then-else. C may run when A is true. [SC2015]
     [[ "${pattern[0]}" == "1" ]] && {
         light_led &
         return 0
@@ -245,7 +249,7 @@ EOF
 
 #so pgrep/pkill exclude their own pid, but not their parent
 #the parent is this script, which we don't want to kill
-if [ -n "$(pgrep LED | grep -v ${PPID})" ]; then
-    kill $(pgrep LED | grep -v ${PPID}) &> /dev/null
+if pgrep LED | grep -qvE "$$|${PPID}"; then
+    kill "$(pgrep LED | grep -v "$$|${PPID}")" > /dev/null 2>&1
 fi
-run_led $@ || show_usage
+run_led "$@" || show_usage
