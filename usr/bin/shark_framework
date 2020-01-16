@@ -138,11 +138,11 @@ enter_attack_mode() {
     /usr/bin/LED OFF
 
     stop_dnsmasq
+    ip link set eth0 down
+    macchanger -r eth0
     configure_network
     stop_http
     stop_ssh
-    ip link set eth0 down
-    macchanger -r eth0
 
     echo "execute_payload" | at now
 
