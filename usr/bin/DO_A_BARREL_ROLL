@@ -1,2 +1,18 @@
 #!/bin/sh
-while true;do LED R;LED Y;LED G;LED C;LED B;LED M;done > /dev/null 2>&1 &
+
+roll() {
+    while true; do
+        LED R
+        LED Y
+        LED G
+        LED C
+        LED B
+        LED M
+    done
+}
+
+
+if pgrep -f DO_A_BARREL_ROLL | grep -qvE "$$|${PPID}"; then
+    kill "$(pgrep -f DO_A_BARREL_ROLL | grep -vE "$$|${PPID}" | tr '\n' ' ')" > /dev/null 2>&1
+fi
+roll > /dev/null 2>&1 &

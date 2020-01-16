@@ -1,36 +1,54 @@
 #!/bin/bash
 LOG="logger -t Shark [*]"
-$LOG "Executing PAYLOAD"
+$LOG "Prepping PAYLOAD environment"
 
 if [ ! -d /root/loot ]; then
   mkdir -p /root/loot;
 fi
+
+wait_for_link() {
+    LED SETUP
+    until swconfig dev switch0 port 0 get link | grep -q 'link:up'; do
+        sleep 1
+    done
+    LED LINKSETUP
+}
+wait_for_no_link() {
+    LED LINKSETUP
+    until swconfig dev switch0 port 0 get link | grep -q 'link:down'; do
+        sleep 1
+    done
+    LED SETUP
+}
 
 payload_path="/root/payload"
 payload=$(find "${payload_path}"/payload* 2>/dev/null | tail -n1)
 
 extension_path="/root/payload/extensions/"
 if [ -d "${extension_path}" ] && [ -n "$(ls -A ${extension_path})" ]; then
-  for extension in "${extension_path}"*; do
-    # shellcheck source=/dev/null
-    . "${extension}"
-  done
-  #declare is the only non-posix, and likely isn't needed
-  eval "$(declare -F | sed -e 's/-f /-fx /')"
+    for extension in "${extension_path}"*; do
+        # shellcheck source=/dev/null
+        . "${extension}"
+    done
+    #declare is the only non-posix, and likely isn't needed
+    eval "$(declare -F | sed -e 's/-f /-fx /')"
 fi
 
+wait_for_link
+
+$LOG "Running requested PAYLOAD"
 case $(basename "${payload}") in
-  "payload.py")
-    python "${payload}" > /dev/null 2>&1
-    ;;
-  "payload.php")
-    php-cli "${payload}" > /dev/null 2>&1
-    ;;
-  "payload" | "payload.sh" | "payload.txt")
-    sed -i 's/\r//g' "${payload}"
-    bash -C "${payload}" > /dev/null 2>&1
-    ;;
-  *)
-    /usr/bin/LED FAIL
-    ;;
+    "payload.py")
+        python "${payload}" > /dev/null 2>&1
+        ;;
+    "payload.php")
+        php-cli "${payload}" > /dev/null 2>&1
+        ;;
+    "payload" | "payload.sh" | "payload.txt")
+        sed -i 's/\r//g' "${payload}"
+        bash -C "${payload}" > /dev/null 2>&1
+        ;;
+    *)
+        /usr/bin/LED FAIL
+        ;;
 esac

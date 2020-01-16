@@ -98,14 +98,6 @@ execute_upgrade() {
     fi
 }
 
-wait_for_link() {
-    LED LINKSETUP
-    until swconfig dev switch0 port 0 get link | grep -q 'link:up'; do
-        sleep 1
-    done
-    LED SETUP
-}
-
 configure_network() {
     cp "/usr/lib/hak5/shark/config/${SWITCH_POSITION}/network" /etc/config/network
     /etc/init.d/network restart
