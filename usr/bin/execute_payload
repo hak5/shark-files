@@ -7,11 +7,12 @@ if [ ! -d /root/loot ]; then
 fi
 
 payload_path="/root/payload"
-payload=$(ls $payload_path/payload* 2>/dev/null | tail -n1)
+payload=$(find "${payload_path}"/payload* 2>/dev/null | tail -n1)
 
 extension_path="/root/payload/extensions/"
 if [ -d "${extension_path}" ] && [ -n "$(ls -A ${extension_path})" ]; then
-  for extension in ${extension_path}*; do
+  for extension in "${extension_path}"*; do
+    # shellcheck source=/dev/null
     source "${extension}"
   done
   eval "$(declare -F | sed -e 's/-f /-fx /')"
@@ -25,7 +26,7 @@ case $(basename "${payload}") in
     php-cli "${payload}" &> /dev/null
     ;;
   "payload" | "payload.sh" | "payload.txt")
-    sed -i 's/\r//g' $payload
+    sed -i 's/\r//g' "${payload}"
     bash -C "${payload}" &> /dev/null
     ;;
   *)
