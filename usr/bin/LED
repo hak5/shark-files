@@ -245,7 +245,7 @@ EOF
 
 #so pgrep/pkill exclude their own pid, but not their parent
 #the parent is this script, which we don't want to kill
-if [ -n "$(pgrep LED | grep -v $$)" ]; then
-  kill $(pgrep LED | grep -v $$) &> /dev/null
+if [ -n "$(pgrep LED | grep -v ${PPID})" ]; then
+    kill $(pgrep LED | grep -v ${PPID}) &> /dev/null
 fi
 run_led $@ || show_usage
