@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
-function show_usage() {
+show_usage() {
     echo "Usage: $0 [DHCP_CLIENT|DHCP_SERVER|AUTO]"
     echo ""
 }
 
-function shut_it_all_down() {
+shut_it_all_down() {
     #we are restarting, possibly with new config, or reversing dhcp roles
     #kill 'em all, let the user sort them out
     /etc/init.d/dnsmasq stop
@@ -14,12 +14,12 @@ function shut_it_all_down() {
     pkill -9 odhcpcd #just in case
 }
 
-function configure_dhcp_client() {
+configure_dhcp_client() {
     shut_it_all_down
     uci set network.lan.proto='dhcp'
 }
 
-function configure_dhcp_server() {
+configure_dhcp_server() {
     shut_it_all_down
     uci set network.lan.proto='static'
     uci set network.lan.ipaddr='172.16.24.1'
@@ -33,7 +33,7 @@ function configure_dhcp_server() {
     /etc/init.d/dnsmasq start
 }
 
-function blink() {
+blink() {
   count 3
   while [ "${count}" -gt 0 ]; do
     LED "${1}"
