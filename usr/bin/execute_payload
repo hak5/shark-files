@@ -13,21 +13,22 @@ extension_path="/root/payload/extensions/"
 if [ -d "${extension_path}" ] && [ -n "$(ls -A ${extension_path})" ]; then
   for extension in "${extension_path}"*; do
     # shellcheck source=/dev/null
-    source "${extension}"
+    . "${extension}"
   done
+  #declare is the only non-posix, and likely isn't needed
   eval "$(declare -F | sed -e 's/-f /-fx /')"
 fi
 
 case $(basename "${payload}") in
   "payload.py")
-    python "${payload}" &> /dev/null
+    python "${payload}" > /dev/null 2>&1
     ;;
   "payload.php")
-    php-cli "${payload}" &> /dev/null
+    php-cli "${payload}" > /dev/null 2>&1
     ;;
   "payload" | "payload.sh" | "payload.txt")
     sed -i 's/\r//g' "${payload}"
-    bash -C "${payload}" &> /dev/null
+    bash -C "${payload}" > /dev/null 2>&1
     ;;
   *)
     /usr/bin/LED FAIL
