@@ -167,6 +167,7 @@ enter_off_mode() {
     MODE="OFF"
     /usr/bin/LED OFF
 
+    /etc/init.d/network stop
     stop_dnsmasq
     stop_http
     stop_ssh
