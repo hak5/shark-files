@@ -141,9 +141,9 @@ enter_attack_mode() {
     configure_network
     stop_http
     stop_ssh
+    ip link set eth0 down
     macchanger -r eth0
 
-    wait_for_link
     echo "execute_payload" | at now
 
     enter_idle_mode
