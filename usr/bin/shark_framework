@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 
-LOG="logger -t Shark [*]"
-LOG_ERR="logger -t Shark -p 3 [!]"
+export LOG="logger -t Shark [*]"
+export LOG_ERR="logger -t Shark -p 3 [!]"
 
 MODE="OFF"
 SWITCH_POSITION=$(/usr/bin/SWITCH)
 
-function upgrade_leds() {
+upgrade_leds() {
     /usr/bin/LED OFF
     while true
     do
@@ -22,16 +22,16 @@ function upgrade_leds() {
 # $1: Upgrade file
 # $2: MD5 file
 # $3: Upgrade file size in bytes
-function extract_md5() {
-    dd if=$1 of=$2 skip=$3 bs=1 count=33
+extract_md5() {
+    dd if="${1}" of="${2}" skip="${3}" bs=1 count=33
 }
 
 # $1: Upgrade file
 # $2: MD5 file
-function verify_md5() {
-    expected=$(cat $2)
-    checksum=$(md5sum $1 | awk '{print $1}')
-    [[ $expected = $checksum ]] && {
+verify_md5() {
+    expected=$(cat "${2}")
+    checksum=$(md5sum "${1}" | awk '{print $1}')
+    [ "${expected}" = "${checksum}" ] && {
         return 0
     }
     return 1
@@ -39,27 +39,27 @@ function verify_md5() {
 
 # $1: Upgrade file
 # $2: Upgrade file size in bytes
-function truncate_upgrade() {
-    dd if=/dev/null of=$1 bs=1 seek=$2
+truncate_upgrade() {
+    dd if=/dev/null of="${1}" bs=1 seek="${2}"
 }
 
-function execute_upgrade() {
+execute_upgrade() {
     # Check for upgrade file in default location
     $LOG "Checking for firmware upgrade"
-    upgrade_file=$(ls /root/upgrade-*.bin 2>/dev/null | tail -n1)
+    upgrade_file=$(find /root/upgrade-*.bin -type f 2>/dev/null | tail -n1)
 
-    [[ -f $upgrade_file ]] && {
+    if [ -f "${upgrade_file}" ]; then
         # Upgrade file found
         $LOG "Firmware upgrade found"
 
         $LOG "Verifying firmware upgrade"
-        upgrade_file_size=$(( $(ls -l $upgrade_file | awk '{print $5}') - 33 ))
+        upgrade_file_size=$(( $(ls -l "${upgrade_file}" | awk '{print $5}') - 33 ))
 
         # Extract md5sum from upgrade file
-        extract_md5 $upgrade_file /tmp/upgrade.md5 $upgrade_file_size
+        extract_md5 "${upgrade_file}" /tmp/upgrade.md5 "${upgrade_file_size}"
 
-        cp $upgrade_file /tmp/upgrade.bin
-        truncate_upgrade /tmp/upgrade.bin $upgrade_file_size
+        cp "${upgrade_file}" /tmp/upgrade.bin
+        truncate_upgrade /tmp/upgrade.bin "${upgrade_file_size}"
 
         # Verify upgrade file
         verify_md5 /tmp/upgrade.bin /tmp/upgrade.md5 || {
@@ -74,7 +74,7 @@ function execute_upgrade() {
         # Check battery state first
         $LOG "Checking device power state"
         battery_state=$(/usr/bin/BATTERY)
-        [[ $battery_state = "discharging" ]] && {
+        [ "${battery_state}" = "discharging" ] && {
             # Device is not plugged in
             $LOG "Device is not powered. Do not attempt firmware upgrade"
             return 1
@@ -82,7 +82,7 @@ function execute_upgrade() {
         $LOG "Device is powered"
 
         # Remove upgrade file
-        rm -rf $upgrade_file
+        rm -rf "${upgrade_file}"
         sync
 
         # Upgrade file verified; run upgrade
@@ -91,14 +91,14 @@ function execute_upgrade() {
         echo "sysupgrade -n /tmp/upgrade.bin" | at now
 
         exit
-    } || {
+    else
         # Upgrade file not found; enter arming mode
         $LOG "Firmware upgrade not found"
         return 1
-    }
+    fi
 }
 
-function wait_for_link() {
+wait_for_link() {
     LED LINKSETUP
     until swconfig dev switch0 port 0 get link | grep -q 'link:up'; do
         sleep 1
@@ -106,28 +106,28 @@ function wait_for_link() {
     LED SETUP
 }
 
-function configure_network() {
+configure_network() {
     cp "/usr/lib/hak5/shark/config/${SWITCH_POSITION}/network" /etc/config/network
     /etc/init.d/network restart
 }
 
-function start_http() {
+start_http() {
     /etc/init.d/uhttpd start
 }
 
-function stop_http() {
+stop_http() {
     /etc/init.d/uhttpd stop
 }
 
-function start_ssh() {
+start_ssh() {
     /etc/init.d/sshd start
 }
 
-function stop_ssh() {
+stop_ssh() {
     /etc/init.d/sshd stop
 }
 
-function start_dnsmasq() {
+start_dnsmasq() {
     #remove old dhcp options before setting new
     uci -q delete dhcp.lan.dhcp_option
     #disables gateway, netmode re-enables it
@@ -136,11 +136,11 @@ function start_dnsmasq() {
     /etc/init.d/dnsmasq start
 }
 
-function stop_dnsmasq() {
+stop_dnsmasq() {
     /etc/init.d/dnsmasq stop
 }
 
-function enter_attack_mode() {
+enter_attack_mode() {
     $LOG "Entering ATTACK mode"
     MODE="ATTACK"
     /usr/bin/LED OFF
@@ -157,7 +157,7 @@ function enter_attack_mode() {
     enter_idle_mode
 }
 
-function enter_arming_mode() {
+enter_arming_mode() {
     $LOG "Entering ARMING mode"
     MODE="ARMING"
     /usr/bin/LED OFF
@@ -170,7 +170,7 @@ function enter_arming_mode() {
     enter_idle_mode
 }
 
-function enter_off_mode() {
+enter_off_mode() {
     $LOG "Entering OFF mode"
     MODE="OFF"
     /usr/bin/LED OFF
@@ -182,11 +182,11 @@ function enter_off_mode() {
     enter_idle_mode
 }
 
-function enter_idle_mode() {
+enter_idle_mode() {
     $LOG "Entering IDLE mode"
     while true
     do
-        if [[ $MODE = "ARMING" ]] || [[ $MODE = "OFF" ]]; then
+        if [ "${MODE}" = "ARMING" ] || [ "${MODE}" = "OFF" ]; then
             #ARMING mode is basically always idle which means this overrides user LED
             #status once per second.  Don't override user status with idle status.
             #pgrep LED > /dev/null || /usr/bin/LED whatever
@@ -200,8 +200,9 @@ function enter_idle_mode() {
                     ;;
                 *)
                     pgrep LED > /dev/null || /usr/bin/LED Y SLOW
-                    if [[ $MODE = "OFF" ]]; then
-                        sleep 2 && halt
+                    if [ "${MODE}" = "OFF" ]; then
+                        sleep 2
+                        halt
                     fi
                     ;;
             esac
@@ -210,17 +211,17 @@ function enter_idle_mode() {
         SWITCH_POSITION=$(/usr/bin/SWITCH)
         case $SWITCH_POSITION in
             "switch3")
-                if [[ $MODE != "ATTACK" ]]; then
+                if [ "${MODE}" != "ATTACK" ]; then
                     enter_attack_mode
                 fi
                 ;;
             "switch2")
-                if [[ $MODE != "ARMING" ]]; then
+                if [ "${MODE}" != "ARMING" ]; then
                     execute_upgrade || enter_arming_mode
                 fi
                 ;;
             *)
-                if [[ $MODE != "OFF" ]]; then
+                if [ "${MODE}" != "OFF" ]; then
                     enter_off_mode
                 fi
                 ;;
@@ -230,7 +231,7 @@ function enter_idle_mode() {
 }
 
 
-function run() {
+run() {
     case $SWITCH_POSITION in
         "switch3")
             enter_attack_mode
@@ -247,4 +248,4 @@ function run() {
 
 # Start framework after a short wait
 sleep 2
-run &> /dev/null &
+run > /dev/null 2>&1 &
