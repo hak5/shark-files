@@ -6,8 +6,6 @@ show_usage() {
 }
 
 shut_it_all_down() {
-    #we are restarting, possibly with new config, or reversing dhcp roles
-    #kill 'em all, let the user sort them out
     /etc/init.d/dnsmasq stop
     pkill -9 dnsmasq #just in case
     pkill -9 udhcpc #this is the observed dhcp client
