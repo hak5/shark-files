@@ -26,6 +26,18 @@ echo $(uci get system.@system[0].hostname) > /proc/sys/kernel/hostname
 /etc/init.d/odhcpd disable
 /etc/init.d/odhcpd stop
 
+# Disable dnsmasq (controlled by shark service or NETMODE)
+/etc/init.d/dnsmasq disable
+/etc/init.d/dnsmasq stop
+
+# Disable ntpd
+/etc/init.d/sysntpd disable
+/etc/init.d/sysntpd stop
+
+# Disable openvpn
+/etc/init.d/openvpn disable
+/etc/init.d/openvpn stop
+
 # Disable uHTTPd web server
 /etc/init.d/uhttpd disable
 /etc/init.d/uhttpd stop

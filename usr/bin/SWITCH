@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
-function setup() {
+setup() {
     echo "${1}" > /sys/class/gpio/export
     echo in > "/sys/class/gpio/gpio${1}/direction"
 }
 
-function check_gpio() {
+check_gpio() {
     if [ ! -d "/sys/class/gpio/gpio${1}" ]; then
         setup "${1}"
     fi
