@@ -58,11 +58,6 @@ function setup() {
     done
 }
 
-function find_subnet() {
-    #this function only finds ipv4 subnets but is safe in the presence of ipv6
-    SUBNET=$(ip -4 addr show eth0 | awk '/inet\s/ {print $2}' | sed 's/\.[0-9]*\//\.0\//')
-}
-
 function run() {
     # Run setup
     setup
@@ -79,5 +74,5 @@ function run() {
 }
 
 
-# Run payload
-run &
+# Run payload with a 5 minute timeout
+timeout -t 300 run &
