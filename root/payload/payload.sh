@@ -59,7 +59,8 @@ function setup() {
 }
 
 function find_subnet() {
-    SUBNET=$(ip addr | grep -i eth0 | grep -i inet | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}[\/]{1}[0-9]{1,2}" | sed 's/\.[0-9]*\//\.0\//')
+    #this function only finds ipv4 subnets but is safe in the presence of ipv6
+    SUBNET=$(ip -4 addr show eth0 | awk '/inet\s/ {print $2}' | sed 's/\.[0-9]*\//\.0\//')
 }
 
 function run() {
