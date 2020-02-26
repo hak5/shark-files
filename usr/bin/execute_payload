@@ -13,17 +13,9 @@ wait_for_link() {
     done
     LED LINKSETUP
 }
-wait_for_no_link() {
-    LED LINKSETUP
-    until swconfig dev switch0 port 0 get link | grep -q 'link:down'; do
-        sleep 1
-    done
-    LED SETUP
-}
 
 payload_path="/root/payload"
 payload=$(find "${payload_path}"/payload* 2>/dev/null | tail -n1)
-
 extension_path="/root/payload/extensions/"
 if [ -d "${extension_path}" ] && [ -n "$(ls -A ${extension_path})" ]; then
     for extension in "${extension_path}"*; do
