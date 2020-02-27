@@ -21,11 +21,11 @@ SCAN_DIR=/etc/shark/nmap
 function finish() {
     LED CLEANUP
     # Kill Nmap
-    wait $1
-    kill $1 &> /dev/null
+    wait "${1}"
+    kill "${1}" &> /dev/null
 
     # Sync filesystem
-    echo $SCAN_M > $SCAN_FILE
+    echo "${SCAN_M}" > "${SCAN_FILE}"
     sync
     sleep 1
 
@@ -40,17 +40,17 @@ function setup() {
     LED SETUP
 
     # Create tmp scan directory
-    mkdir -p $SCAN_DIR &> /dev/null
+    mkdir -p "${SCAN_DIR}" &> /dev/null
 
     # Create tmp scan file if it doesn't exist
-    SCAN_FILE=$SCAN_DIR/scan-count
-    if [ ! -f $SCAN_FILE ]; then
-        touch $SCAN_FILE && echo 0 > $SCAN_FILE
+    SCAN_FILE="${SCAN_DIR}/scan-count"
+    if [ ! -f "${SCAN_FILE}" ]; then
+        touch "${SCAN_FILE}" && echo 0 > "${SCAN_FILE}"
     fi
 
     # Find IP address and subnet
     NETMODE DHCP_CLIENT
-    while [ -z "$SUBNET" ]; do
+    while [ -z "${SUBNET}" ]; do
         sleep 1 && find_subnet
     done
 }
@@ -59,15 +59,15 @@ function run() {
     # Run setup
     setup
 
-    SCAN_N=$(cat $SCAN_FILE)
-    SCAN_M=$(( $SCAN_N + 1 ))
+    SCAN_N=$(cat ${SCAN_FILE})
+    SCAN_M=$(( SCAN_N + 1 ))
 
     LED ATTACK
     # Start scan
-    nmap $NMAP_OPTIONS $SUBNET -oN $LOOT_DIR/nmap-scan_$SCAN_M.txt &>/dev/null &
+    nmap ${NMAP_OPTIONS} "${SUBNET}" -oN "${LOOT_DIR}/nmap-scan_${SCAN_M}.txt" &>/dev/null &
     tpid=$!
 
-    finish $tpid
+    finish "${tpid}"
 }
 
 
