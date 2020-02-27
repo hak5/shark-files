@@ -1,7 +1,9 @@
 #!/bin/bash
 #
 # HAK5_HELPERS by @Zero_ChaosX
-# Built in helper functions to aid writing payloads
+# Built in helper functions and variables to aid writing payloads
+
+export LOOT_DIR=/root/loot/
 
 function find_subnet() {
     #USAGE:  find_subnet
@@ -18,7 +20,7 @@ export -f find_subnet
     #Result: execution pauses until link connected state is detected
     #Notes:  defined in /usr/bin/execute_payload
 
-wait_for_no_link() {
+function wait_for_no_link() {
     #USAGE:  wait_for_no_link
     #Result: execution pauses until link disconnected state is detected
     LED LINKSETUP

@@ -31,7 +31,11 @@ wait_for_link
 $LOG "Running requested PAYLOAD"
 case $(basename "${payload}") in
     "payload.py")
-        python "${payload}" > /dev/null 2>&1
+        if [ -x "$(command -v python)" ]; then
+            python "${payload}" > /dev/null 2>&1
+        else
+            $LOG "Python payload requested but python is not installed"
+        fi
         ;;
     "payload" | "payload.sh" | "payload.txt")
         sed -i 's/\r//g' "${payload}"

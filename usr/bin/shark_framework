@@ -141,11 +141,13 @@ enter_attack_mode() {
     ip link set eth0 down
     macchanger -r eth0
     configure_network
-    #nothing starts this, but ensure it only runs with
+    #nothing starts this, but ensure it only runs when requested
     pkill -9 udhcpc
     stop_http
     stop_ssh
 
+    LOOT_DIR=/root/loot
+    mkdir -p "${LOOT_DIR}"
     echo "execute_payload" | at now
 
     enter_idle_mode

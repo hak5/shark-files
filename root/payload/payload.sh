@@ -15,7 +15,6 @@
 # fast host discovery.
 
 NMAP_OPTIONS="-sP --host-timeout 30s --max-retries 3"
-LOOT_DIR=/root/loot/nmap
 SCAN_DIR=/etc/shark/nmap
 
 
@@ -39,8 +38,6 @@ function finish() {
 
 function setup() {
     LED SETUP
-    # Create loot directory
-    mkdir -p $LOOT_DIR &> /dev/null
 
     # Create tmp scan directory
     mkdir -p $SCAN_DIR &> /dev/null
