@@ -128,7 +128,8 @@ function execute_payload() {
             ;;
         "payload" | "payload.sh" | "payload.txt")
             sed -i 's/\r//g' $payload
-            echo "bash -C '$payload'" | at now
+            chmod +x $payload
+            echo "bash -c '$payload'" | at now
             ;;
         *)
             /usr/bin/LED FAIL
