@@ -122,7 +122,7 @@ fi
 
 if [[ $REQUEST_METHOD == 'POST' ]]; then
    if [ -n "$BACKUPNAME" ]; then
-    mkdir -p $PAYLOAD_DIR/$BACKUPNAME
+    mkdir -p "$PAYLOAD_DIR/$BACKUPNAME"
 	cp -rf /root/payload/payload.* "$PAYLOAD_DIR/$BACKUPNAME/payload.sh"
    fi
 fi
@@ -160,12 +160,20 @@ cat <<EOF
       return confirm('Are you sure you want to restore this Payload? (WILL DELETE CURRENT PAYLOAD)');
     }
 	function validatepayload() {
-  var x = document.forms["BACKUP"]["BACKUPNAME"].value;
-  if (x == "") {
-    alert("Name must be filled out");
-    return false;
+      var x = document.forms["BACKUP"]["BACKUPNAME"].value;
+      if (x == "") {
+         alert("Name must be filled out");
+         return false;
+      }
+    }
+    function nospaces()
+    {
+      if(event.which ==32)
+    {
+      event.preventDefault();
+      return false;
+    }
   }
-}
   </script>
   <style>
     input{
@@ -216,7 +224,7 @@ cat <<EOF
 		<br>
 		<b>Backup current Payload into Payload Library:
 		<form name="BACKUP" action="/cgi-bin/library.sh?BACKUP" method="POST" onsubmit="return validatepayload()" enctype="application/x-www-form-urlencoded" required>
-          <input type="text" size="10" maxlength="50" name="BACKUPNAME" style="width:70%" rows="1"placeholder="Example_Backup">
+          <input type="text" size="10" maxlength="50" name="BACKUPNAME" style="width:70%" rows="1"placeholder="Example_Backup" onkeypress="nospaces()">
           <input type="submit" class="button-primary" value="BACKUP" onclick="return confirm_delete()">
 		  </form>
       </div>
