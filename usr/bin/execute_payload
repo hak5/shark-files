@@ -1,4 +1,5 @@
 #!/bin/bash
+
 LOG="logger -t Shark [*]"
 $LOG "Prepping PAYLOAD environment"
 

@@ -53,7 +53,7 @@ execute_upgrade() {
         $LOG "Firmware upgrade found"
 
         $LOG "Verifying firmware upgrade"
-        upgrade_file_size=$(( $(wc -c "${upgrade_file}") - 33 ))
+        upgrade_file_size=$(( $(wc -c "${upgrade_file}" | awk '{print $1}') - 33 ))
 
         # Extract md5sum from upgrade file
         extract_md5 "${upgrade_file}" /tmp/upgrade.md5 "${upgrade_file_size}"

@@ -1,0 +1,138 @@
+#!/bin/bash
+
+export LOG="logger -t Shark [*]"
+export LOG_ERR="logger -t Shark -p 3 [!]"
+
+upgrade_leds() {
+    /usr/bin/LED OFF
+    while true
+    do
+        echo 1 > /sys/class/leds/shark:red:system/brightness
+        sleep 0.2
+        echo 0 > /sys/class/leds/shark:red:system/brightness
+        echo 1 > /sys/class/leds/shark:blue:system/brightness
+        sleep 0.2
+        echo 0 > /sys/class/leds/shark:blue:system/brightness
+    done
+}
+
+# $1: Upgrade file
+# $2: MD5 file
+# $3: Upgrade file size in bytes
+extract_md5() {
+    dd if="${1}" of="${2}" skip="${3}" bs=1 count=33
+}
+
+# $1: Upgrade file
+# $2: MD5 file
+verify_md5() {
+    expected=$(cat "${2}")
+    checksum=$(md5sum "${1}" | awk '{print $1}')
+    [ "${expected}" = "${checksum}" ] && {
+        return 0
+    }
+    return 1
+}
+
+# $1: Upgrade file
+# $2: Upgrade file size in bytes
+truncate_upgrade() {
+    dd if=/dev/null of="${1}" bs=1 seek="${2}"
+}
+
+execute_upgrade() {
+    # Check for upgrade file in default location
+    upgrade_file=$(find /tmp/upgrade-* -type f 2>/dev/null | tail -n1)
+
+    if [ -f "${upgrade_file}" ]; then
+        # Upgrade file found
+        $LOG "Firmware upgrade found"
+
+        $LOG "Verifying firmware upgrade"
+        upgrade_file_size=$(( $(wc -c "${upgrade_file}" | awk '{print $1}') - 33 ))
+
+        # Extract md5sum from upgrade file
+        echo "extracting md5"
+        extract_md5 "${upgrade_file}" /tmp/upgrade.md5 "${upgrade_file_size}"
+
+        cp "${upgrade_file}" /tmp/upgrade.bin
+        echo "truncating"
+        truncate_upgrade /tmp/upgrade.bin "${upgrade_file_size}"
+
+        # Verify upgrade file
+        if ! verify_md5 /tmp/upgrade.bin /tmp/upgrade.md5; then
+            # Upgrade file not verified; exit
+            $LOG "Firmware upgrade not verified. File may be corrupt"
+            LED FAIL &
+            return 1
+        fi
+        $LOG "Firmware upgrade verified"
+        LED OFF && LED G SUCCESS
+
+        # Check battery state first
+        $LOG "Checking device power state"
+        battery_state=$(/usr/bin/BATTERY)
+        if [ "${battery_state}" = "discharging" && -f "/etc/shark/cable" ]; then
+            # Device is not plugged in
+            $LOG "Device is not powered. Do not attempt firmware upgrade"
+            return 1
+        fi
+        $LOG "Device is powered"
+
+        # Remove upgrade file
+        rm -rf "${upgrade_file}"
+        sync
+
+        # Upgrade file verified; run upgrade
+        $LOG "Executing UPGRADE"
+        sleep 2 && upgrade_leds &
+        echo "sysupgrade -n /tmp/upgrade.bin" | at now
+
+        exit
+    else
+        # Upgrade file not found; enter arming mode
+        echo "Firmware update file is missing. Exiting."
+        exit 1
+    fi
+}
+
+check_for_internet() {
+    if ! ping -q -c 1 -W 1 8.8.8.8 &>/dev/null 2>&1; then
+        echo "You must have an internet connection to check for updates."
+        exit 0
+    fi
+}
+
+check_for_upgrade() {
+    echo "Checking for updates"
+    wget https://downloads.hak5.org/api/devices/sharkjack/firmwares -qO /tmp/firmware_check
+    remote_version=$(cat /tmp/firmware_check | jq -c '.[] | select( .latest_version == true ) | .version' | sed 's/-stable//' | sed 's/"//g')
+    local_version=$(cat /root/VERSION)
+
+    if [[ $remote_version != $local_version ]]; then
+        echo "There is an update available!"
+        echo "Press CTRL+C within the next 10 seconds to cancel."
+        for i in {10..1}; do
+            echo -n "$i..."
+            sleep 1
+        done
+        echo ""
+        echo ""
+        echo "Please do not power off the device!"
+        curl -sL https://downloads.hak5.org/api/devices/sharkjack/firmwares/$remote_version-stable -o "/tmp/upgrade-$remote_version.bin"
+        execute_upgrade
+    else
+        echo "Your device is up-to-date."
+        exit 0
+    fi
+}
+
+main() {
+    echo "Checking internet connection"
+    check_for_internet
+
+    check_for_upgrade
+}
+
+main
+

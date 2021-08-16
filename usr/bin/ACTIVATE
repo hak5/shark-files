@@ -1,0 +1,74 @@
+#!/bin/bash
+
+LIBRARY_DIR="/root/payload/library"
+
+ARG_COUNT=$#
+SPECIFIED_PATH=$1
+PATH_TYPE=""
+PAYLOAD_PATH=""
+
+usage() {
+    echo "Usage: $0 [payload]"
+    echo "Examples:"
+    echo "    $0 recon/nmap      (Use a payload inside the library)"
+    echo "    $0 /tmp/payload.sh (Use a specific file as the payload)"
+    echo " "
+}
+
+activate_payload() {
+    if [[ $PATH_TYPE == "ABSOLUTE" ]]; then
+        if [[ -f $PAYLOAD_PATH ]]; then
+            cp -r $PAYLOAD_PATH /root/payload.sh
+            chmod +x /root/payload.sh
+            echo "Activated $SPECIFIED_PATH successfully."
+        else
+            echo "The specified payload does not exist."
+            usage
+            exit 1
+        fi
+    else
+        if [[ -d $PAYLOAD_PATH ]]; then
+            cp -r $PAYLOAD_PATH/payload.sh /root/payload/payload.sh
+            chmod +x /root/payload.sh
+            echo "Activated $SPECIFIED_PATH successfully."
+        else
+            echo "The specified payload does not exist. Make sure your library is up to date with UPDATE_PAYLOADS."
+            usage
+            exit 1
+        fi
+    fi
+}
+
+check_path_absolute() {
+    case $SPECIFIED_PATH in
+        "/"*)
+            PATH_TYPE="ABSOLUTE"
+            ;;
+        *)
+            PATH_TYPE="RELATIVE"
+            ;;
+    esac
+}
+
+check_arguments() {
+    if [[ $ARG_COUNT -ne 1 ]]; then
+        echo "You must specify a payload to activate."
+        usage
+        exit 1
+    fi
+}
+
+main() {
+    check_arguments
+
+    check_path_absolute
+    if [[ $PATH_TYPE == "RELATIVE" ]]; then
+        PAYLOAD_PATH=$LIBRARY_DIR/$SPECIFIED_PATH
+    else
+        PAYLOAD_PATH=$SPECIFIED_PATH
+    fi
+
+    activate_payload
+}
+
+main

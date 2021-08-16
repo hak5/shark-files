@@ -1,0 +1,38 @@
+#!/bin/bash
+
+MASTER_URL="https://github.com/hak5/sharkjack-payloads/archive/refs/heads/master.tar.gz"
+
+check_for_internet() {
+    if ! ping -q -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+        echo "You must have an internet connection to sync the payload libraries."
+        exit 0
+    fi
+}
+
+cleanup_tmp() {
+    rm -rf /tmp/payloads-sync.tar.gz
+    rm -rf /tmp/payloads-sync
+}
+
+update_payloads() {
+    cleanup_tmp
+
+    echo "Downloading payloads repository..."
+    curl -sL $MASTER_URL -o /tmp/payloads-sync.tar.gz
+
+    mkdir /tmp/payloads-sync
+    tar -xzf /tmp/payloads-sync.tar.gz -C /tmp/payloads-sync
+
+    cp -r /tmp/payloads-sync/sharkjack-payloads-master/payloads/library /root/payload/
+
+    cleanup_tmp
+
+    echo "Successfully syncronized payloads repository."
+}
+
+main() {
+    check_for_internet
+    update_payloads
+}
+
+main

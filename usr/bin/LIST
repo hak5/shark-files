@@ -1,0 +1,43 @@
+#!/bin/bash
+
+LIBRARY_DIR="/root/payload/library"
+
+PAYLOAD_CATEGORIES=()
+
+list_payloads() {
+    if [[ ! -d $LIBRARY_DIR ]]; then
+        echo "Payload library is missing. Run UPDATE_PAYLOADS to sync the payload library."
+        exit 1
+    fi
+
+    if [[ -z "$(ls -A $LIBRARY_DIR)" ]]; then
+        echo "Payload library is empty. Run UPDATE_PAYLOADS to sync the payload library."
+        exit 1
+    fi
+
+    echo "Payloads"
+    echo "========"
+    echo " "
+
+    for entry in $LIBRARY_DIR/*; do
+        if [[ -d $entry ]]; then
+            # Append discovered category to array
+            PAYLOAD_CATEGORIES+=($(basename $entry))
+        fi
+    done
+
+    for category in ${PAYLOAD_CATEGORIES[@]}; do
+        echo "$category"
+        echo "---------"
+        for payload in $LIBRARY_DIR/$category/*; do
+            echo "    $(basename $payload)"
+        done
+        echo " "
+    done
+}
+
+main() {
+    list_payloads
+}
+
+main

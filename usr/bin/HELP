@@ -1,0 +1,20 @@
+#!/bin/bash
+
+print_help() {
+    echo "Hak5 Shark Jack Help"
+    echo "===================="
+
+    echo "HELP              - List Shark Jack helpers and commands"
+    echo "ACTIVATE          - Activate a payload"
+    echo "ACTIVATE_PAYLOAD  - Alias for ACTIVATE"
+    echo "LIST              - List the local payload library"
+    echo "LIST_PAYLOADS     - Alias for LIST"
+    echo "UPDATE_PAYLOADS   - Syncronize local payload library with remote library"
+    echo "UPDATE_FIRMWARE   - Check for and install available firmware updates"
+    echo "SERIAL_WRITE      - Write to the serial console"
+    echo "LED               - Configure the LED"
+
+    echo " "
+}
+
+print_help

