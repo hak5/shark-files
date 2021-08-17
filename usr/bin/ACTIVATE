@@ -18,8 +18,8 @@ usage() {
 activate_payload() {
     if [[ $PATH_TYPE == "ABSOLUTE" ]]; then
         if [[ -f $PAYLOAD_PATH ]]; then
-            cp -r $PAYLOAD_PATH /root/payload.sh
-            chmod +x /root/payload.sh
+            cp -r $PAYLOAD_PATH /root/payload/payload.sh
+            chmod +x /root/payload/payload.sh
             echo "Activated $SPECIFIED_PATH successfully."
         else
             echo "The specified payload does not exist."
@@ -29,7 +29,7 @@ activate_payload() {
     else
         if [[ -d $PAYLOAD_PATH ]]; then
             cp -r $PAYLOAD_PATH/payload.sh /root/payload/payload.sh
-            chmod +x /root/payload.sh
+            chmod +x /root/payload/payload.sh
             echo "Activated $SPECIFIED_PATH successfully."
         else
             echo "The specified payload does not exist. Make sure your library is up to date with UPDATE_PAYLOADS."
