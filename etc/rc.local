@@ -1,0 +1,15 @@
+# Configure Serial Console
+
+sleep 3
+echo -e '\033c' > /dev/ttyS0
+
+if [[ $(SWITCH) == "switch3" ]]; then
+    SERIAL_WRITE Shark Jack Status: ATTACK MODE
+else
+    SERIAL_WRITE Shark Jack Status: ARMING MODE
+fi
+
+SERIAL_WRITE Press ENTER to activate console
+
+exit 0
+
