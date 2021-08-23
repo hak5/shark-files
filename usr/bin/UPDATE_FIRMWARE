@@ -105,7 +105,13 @@ check_for_internet() {
 
 check_for_upgrade() {
     echo "Checking for updates"
-    wget https://downloads.hak5.org/api/devices/sharkjack/firmwares -qO /tmp/firmware_check
+
+    URL="https://downloads.hak5.org/api/devices/sharkjack/firmwares"
+    if [ -f "/etc/shark/cable" ]; then
+        URL="https://downloads.hak5.org/api/devices/sharkjack-cable/firmwares"
+    fi
+
+    wget $URL -qO /tmp/firmware_check
     remote_version=$(cat /tmp/firmware_check | jq -c '.[] | select( .latest_version == true ) | .version' | sed 's/-stable//' | sed 's/"//g')
     local_version=$(cat /root/VERSION)
 
