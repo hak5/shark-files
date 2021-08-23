@@ -72,7 +72,7 @@ execute_upgrade() {
         # Check battery state first
         $LOG "Checking device power state"
         battery_state=$(/usr/bin/BATTERY)
-        if [ "${battery_state}" = "discharging" && -f "/etc/shark/cable" ]; then
+        if [ "${battery_state}" = "discharging" ] && [ ! -f "/etc/shark/cable" ]; then
             # Device is not plugged in
             $LOG "Device is not powered. Do not attempt firmware upgrade"
             return 1

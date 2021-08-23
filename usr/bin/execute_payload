@@ -4,11 +4,12 @@ LOG="logger -t Shark [*]"
 $LOG "Prepping PAYLOAD environment"
 
 if [ ! -d /root/loot ]; then
-  mkdir -p /root/loot;
+    mkdir -p /root/loot;
 fi
 
 wait_for_link() {
     LED SETUP
+    SERIAL_WRTIE "[*] Waiting for Ethernet link to come up..."
     until swconfig dev switch0 port 0 get link | grep -q 'link:up'; do
         sleep 1
     done
@@ -16,6 +17,7 @@ wait_for_link() {
 }
 wait_for_no_link() {
     LED LINKSETUP
+    SERIAL_WRITE "[*] Waiting for Ethernet link to go down..."
     until swconfig dev switch0 port 0 get link | grep -q 'link:down'; do
         sleep 1
     done
@@ -37,7 +39,7 @@ fi
 
 wait_for_link
 
-$LOG "Running requested PAYLOAD"
+SERIAL_WRITE "[*] Starting Payload"
 case $(basename "${payload}") in
     "payload.py")
         python "${payload}" > /dev/null 2>&1
