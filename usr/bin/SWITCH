@@ -1,5 +1,10 @@
 #!/bin/sh
 
+OFFSET=416
+
+GPIO0=$(($OFFSET))
+GPIO2=$((2 + $OFFSET))
+
 setup() {
     echo "${1}" > /sys/class/gpio/export
     echo in > "/sys/class/gpio/gpio${1}/direction"
@@ -13,8 +18,8 @@ check_gpio() {
     echo "${state}"
 }
 
-gpio0=$(check_gpio 0)
-gpio2=$(check_gpio 2)
+gpio0=$(check_gpio $GPIO0)
+gpio2=$(check_gpio $GPIO2)
 
 if [ "${gpio0}" -eq "0" ] && [ "${gpio2}" -eq "0" ]; then
     echo "switch1"

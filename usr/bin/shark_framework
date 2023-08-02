@@ -192,11 +192,15 @@ enter_idle_mode() {
                 "full")
                     pgrep LED > /dev/null || /usr/bin/LED B
                     ;;
+                "cable")
+                    # Do nothing with battery if we're a sharkjack cable platform
+                    ;;
                 *)
                     pgrep LED > /dev/null || /usr/bin/LED Y SLOW
                     if [ "${MODE}" = "OFF" ]; then
-                        sleep 2
-                        halt
+                        #sleep 2
+                        #halt
+                        $LOG "battery state other ($BATTERY_STATE) would halt"
                     fi
                     ;;
             esac
