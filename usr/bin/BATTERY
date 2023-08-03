@@ -1,6 +1,6 @@
 #!/bin/sh
 
-OFFSET=416
+OFFSET=480
 
 GPIO40=$((40 + $OFFSET))
 GPIO41=$((41 + $OFFSET))
@@ -23,8 +23,6 @@ gpio41=$(check_gpio $GPIO41)
 
 if [ "${gpio40}" -eq "0" ] && [ "${gpio41}" -eq "0" ]; then
         echo "discharging"
-elif [ "${gpio40}" -eq "1" ] && [ "${gpio41}" -eq "1" ]; then
-        echo "cable"
 elif [ "${gpio40}" -eq "0" ]; then
         echo "full"
 elif [ "${gpio41}" -eq "0" ]; then
