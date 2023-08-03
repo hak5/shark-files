@@ -1,6 +1,6 @@
 #!/bin/sh
 
-OFFSET=480
+OFFSET=416
 
 GPIO40=$((40 + $OFFSET))
 GPIO41=$((41 + $OFFSET))
