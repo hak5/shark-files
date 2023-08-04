@@ -1,8 +1,8 @@
 #!/bin/bash
 
-RED_LED="/sys/class/leds/shark:red:system/brightness"
-GREEN_LED="/sys/class/leds/shark:green:system/brightness"
-BLUE_LED="/sys/class/leds/shark:blue:system/brightness"
+RED_LED="/sys/class/leds/red:system/brightness"
+GREEN_LED="/sys/class/leds/green:system/brightness"
+BLUE_LED="/sys/class/leds/blue:system/brightness"
 
 colors=(0 0 0)
 pattern=(1 0 0 0 0 0)
