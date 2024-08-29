@@ -7,6 +7,11 @@ check_for_internet() {
         echo "You must have an internet connection to sync the payload libraries."
         exit 0
     fi
+
+    if ! ping -q -c 1 -W 1 google.com &>/dev/null 2>&1; then
+        echo "You must have an internet connection with working DNS to check for updates."
+        exit 0
+    fi
 }
 
 cleanup_tmp() {
