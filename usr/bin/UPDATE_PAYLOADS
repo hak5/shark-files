@@ -7,6 +7,11 @@ check_for_internet() {
         echo "You must have an internet connection to sync the payload libraries."
         exit 0
     fi
+
+    if ! ping -q -c 1 -W 1 google.com &>/dev/null 2>&1; then
+        echo "You must have an internet connection with working DNS to check for updates."
+        exit 0
+    fi
 }
 
 cleanup_tmp() {
@@ -19,19 +24,32 @@ update_payloads() {
 
     echo "Downloading payloads repository..."
     curl -sL $MASTER_URL -o /tmp/payloads-sync.tar.gz
+    status=$?
+    if [ $status -eq 0 ]; then
+        mkdir /tmp/payloads-sync
+        tar -xzf /tmp/payloads-sync.tar.gz -C /tmp/payloads-sync
 
-    mkdir /tmp/payloads-sync
-    tar -xzf /tmp/payloads-sync.tar.gz -C /tmp/payloads-sync
+        cp -r /tmp/payloads-sync/sharkjack-payloads-master/payloads/library /root/payload/
 
-    cp -r /tmp/payloads-sync/sharkjack-payloads-master/payloads/library /root/payload/
+        cleanup_tmp
 
-    cleanup_tmp
-
-    echo "Successfully syncronized payloads repository."
+        echo "Successfully syncronized payloads repository."
+    else
+        echo "failed to fetch payloads"
+        exit 1
+    fi
 }
+
+update_time() {
+    echo "Ensuring system time is correct"
+
+    ntpd -q -p 1.openwrt.pool.ntp.org
+}
+
 
 main() {
     check_for_internet
+    update_time
     update_payloads
 }
 
